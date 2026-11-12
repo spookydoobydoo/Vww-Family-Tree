@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Newleaf | Family Tree</title>
+<style>
+:root{color-scheme:dark;--bg:#201b19;--panel:#302720;--line:#76543d;--accent:#d98b51;--text:#f4e6d8}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px system-ui,Arial,sans-serif}.shell{padding:15px;max-width:1150px;margin:auto}header,.toolbar,.actions{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}h1{margin:0;color:var(--accent);font-size:23px}small,.muted,.hint{color:#c9ae96}.toolbar{margin:16px 0}button,input,select{font:inherit}button{border:1px solid #936b4b;border-radius:7px;background:#493527;color:var(--text);padding:9px 12px;cursor:pointer}button:hover{border-color:var(--accent)}button:disabled{opacity:.45;cursor:default}.primary{background:var(--accent);color:#211a16;font-weight:700}.viewport{height:440px;border:1px solid var(--line);border-radius:10px;overflow:hidden;touch-action:none;cursor:grab;background:radial-gradient(#403128 1px,transparent 1px) 0 0/24px 24px}.viewport:active{cursor:grabbing}svg{display:block;width:100%;height:100%}.edge{stroke:#b88b67;stroke-width:2.5;fill:none}.edge.other{stroke-dasharray:6 5}.node{cursor:pointer}.node rect{fill:#3b2d25;stroke:#936a4a;stroke-width:2}.node.selected rect{stroke:#f6b77d;stroke-width:3}.node text{fill:#f4e6d8;text-anchor:middle;pointer-events:none;font-size:13px;font-weight:650}.node .sub{font-size:10px;fill:#c9aa90;font-weight:400}.cat{fill:var(--accent)}.node.unknown{opacity:.55}.panel{margin-top:14px;border:1px solid var(--line);border-radius:10px;padding:16px;background:var(--panel)}h2{font-size:17px;color:var(--accent);margin:0 0 12px}.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:12px}label{display:grid;gap:6px;color:#e9d1bd}input,select{padding:10px;background:#211b18;color:var(--text);border:1px solid #866046;border-radius:6px;width:100%}.actions{justify-content:flex-start;margin-top:14px}.hint{font-size:12px;line-height:1.6}.hidden{display:none!important}.pill{display:inline-block;border:1px solid #866046;padding:4px 8px;border-radius:99px;font-size:12px}@media(max-width:600px){.viewport{height:390px}.shell{padding:10px}}
+
+/* Compact embedded view: let the tree, rather than the editor, fill the profile. */
+body.embedded{overflow:hidden}
+body.embedded .shell{width:100%;max-width:none;height:100dvh;min-height:0;padding:5px 7px;display:flex;flex-direction:column;overflow:hidden}
+body.embedded header{flex:0 0 auto;min-height:25px;gap:4px}
+body.embedded h1{font-size:15px;line-height:1.25}
+body.embedded header small{display:none}
+body.embedded .pill{font-size:10px;padding:2px 6px}
+body.embedded .toolbar{flex:0 0 auto;margin:4px 0;gap:4px;justify-content:flex-start}
+body.embedded .toolbar>div{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+body.embedded button{padding:5px 7px;font-size:11px;border-radius:5px}
+body.embedded #export,body.embedded #importBtn{display:none}
+body.embedded .viewport{flex:1 1 auto;min-height:0;height:auto;width:100%;border-radius:6px}
+body.embedded .panel{display:none}
+body.embedded.editor-open .panel{display:block;position:absolute;z-index:5;left:7px;right:7px;top:65px;bottom:7px;margin:0;overflow:auto;box-shadow:0 8px 30px #000b;padding:12px}
+body.embedded.editor-open .viewport{pointer-events:none}
+#editToggle{display:none}
+body.embedded #editToggle{display:inline-block}
+@media(max-width:600px){body.embedded .shell{padding:4px}body.embedded .toolbar{margin:3px 0}body.embedded .toolbar button{font-size:10px;padding:4px 6px}body.embedded.editor-open .panel{left:4px;right:4px;bottom:4px}}
+#firebaseBar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:4px 0;font-size:11px}#firebaseBar input{width:145px;padding:5px;font-size:11px}#firebaseBar button{padding:5px 8px;font-size:11px}#firebaseStatus{color:#c9ae96}body.embedded #firebaseBar{margin:2px 0}body.embedded #firebaseBar input{width:115px}body.embedded:not(.signed-in) #editToggle{display:none}#saveTree{display:none}body.signed-in #saveTree{display:inline-block}#firebaseBar .signedOnly{display:none}body.signed-in #firebaseBar .signedOnly{display:inline-block}body.signed-in #firebaseBar .loginOnly{display:none}
+</style></head><body><main class="shell"><header><div><h1>Family Tree</h1><small>VWW: Newleaf · Interactive builder</small></div><span class="pill" id="selection">Selected: Jaggedstar</span></header><div class="toolbar"><div><button id="zin">＋ Zoom</button> <button id="zout">－ Zoom</button> <button id="center">Center tree</button> <button id="editToggle" type="button" aria-expanded="false">Edit relatives</button></div><div><button id="export">Export JSON</button> <button id="importBtn">Import JSON</button><input id="importFile" type="file" accept="application/json,.json" hidden></div></div><div id="firebaseBar"><span id="firebaseStatus">Connecting to Firebase…</span><input class="loginOnly" id="fbEmail" type="email" placeholder="Editor email" autocomplete="username"><input class="loginOnly" id="fbPassword" type="password" placeholder="Password" autocomplete="current-password"><button class="loginOnly" id="fbLogin" type="button">Sign in</button><button class="signedOnly" id="fbLogout" type="button">Sign out</button><button id="saveTree" type="button">Save tree</button></div><div class="viewport" id="viewport"><svg id="svg" viewBox="0 0 1000 470" aria-label="Interactive family tree"><g id="world"></g></svg></div><section class="panel"><h2>＋ Add Relative</h2><div class="fields"><label>Relative of<select id="target"></select></label><label>Relationship to selected cat<select id="relation"><option>Mother</option><option>Father</option><option>Grandmother</option><option>Grandfather</option><option>Sibling</option><option>Half-sibling (same father)</option><option>Half-sibling (same mother)</option><option>Mate</option><option>Son</option><option>Daughter</option><option>Child</option><option>Aunt</option><option>Uncle</option><option>Cousin</option></select></label><label>Character type<select id="kind"><option value="npc">NPC</option><option value="registered">Registered Jcink character</option></select></label><label>Character name<input id="name" maxlength="60" placeholder="e.g. Frostwhisker"></label><label id="profileWrap" class="hidden">Jcink profile ID<input id="profileId" inputmode="numeric" placeholder="e.g. 2"></label></div><div class="actions"><button class="primary" id="add">Add Relative</button><button id="remove">Remove selected cat</button><button id="profile" class="hidden">Open selected profile ↗</button></div><h2 style="margin-top:20px">Edit parents of selected cat</h2><div class="fields"><label>Mother<select id="motherChoice"></select></label><label>Father<select id="fatherChoice"></select></label></div><div class="actions"><button id="applyParents" class="primary">Update parents</button></div><p class="hint" id="notice">Click any cat in the tree, then choose a relationship. To add a great-great-grandmother, click a grandmother and add her grandmother. Full siblings share all known parents; half-siblings share only the chosen parent. Missing intermediate parents are shown as unnamed placeholders. Sign in as an authorized editor, make changes, and press Save tree. Visitors can view published trees.</p></section></main>
+<script>
+(()=>{'use strict';
+const embedded=window.self!==window.top;document.body.classList.toggle('embedded',embedded);const editToggle=document.getElementById('editToggle');editToggle.addEventListener('click',()=>{if(!canEdit)return;const open=document.body.classList.toggle('editor-open');editToggle.textContent=open?'Close editor':'Edit relatives';editToggle.setAttribute('aria-expanded',String(open));});
+const $=s=>document.querySelector(s),NS='http://www.w3.org/2000/svg';const params=new URLSearchParams(location.search),characterId=params.get('character');let next=0;const uid=()=>`p${++next}`;
+let people=[{id:'j',name:'Jaggedstar',kind:'registered',profileId:characterId||'2'},{id:'w',name:'Windflurry',kind:'npc'},{id:'m',name:'Moonpool',kind:'npc'},{id:'o',name:'Owlpaw',kind:'registered',profileId:''}];
+// Parent links are always parent -> child; other relationships are undirected display links.
+let links=[{a:'w',b:'j',type:'parent'},{a:'m',b:'j',type:'parent'},{a:'j',b:'o',type:'parent'}];let canEdit=false;let selected='j',scale=1,panX=0,panY=0,drag=null,positions=new Map();
+ const byId=id=>people.find(p=>p.id===id),parentEdges=id=>links.filter(e=>e.type==='parent'&&e.b===id),parents=id=>parentEdges(id).map(e=>byId(e.a)).filter(Boolean),children=id=>links.filter(e=>e.type==='parent'&&e.a===id).map(e=>byId(e.b)).filter(Boolean);
+ const addPerson=(name,kind,profileId='',unknown=false,sex='')=>{const id=uid();people.push({id,name,kind,profileId,unknown,sex});return id};
+ function isAncestor(ancestor,person,seen=new Set()){if(ancestor===person)return true;if(seen.has(person))return false;seen.add(person);return parents(person).some(p=>isAncestor(ancestor,p.id,seen))}
+ function roleOf(catId,role){return parentEdges(catId).find(e=>e.role===role)?.a||null}
+ function migrateParentRoles(){
+   // Older trees had unlabelled parent edges. Preserve every existing connection.
+   for(const p of people){const edges=parentEdges(p.id);for(const e of edges){if(e.role)continue;const parent=byId(e.a);if(!parent)continue;
+     const known=p.id==='j'&&p.name==='Jaggedstar'?(parent.name==='Windflurry'?'mother':parent.name==='Moonpool'?'father':null):null;
+     const desired=known||(['mother','father'].includes(parent.sex)?parent.sex:null);
+     if(desired&&!roleOf(p.id,desired))e.role=desired;
+   }}
+ }
+ function parentLink(parent,child,role=''){
+   if(parent===child||isAncestor(child,parent))throw Error('This would create an ancestry loop.');
+   const existing=links.find(e=>e.type==='parent'&&e.a===parent&&e.b===child);
+   if(existing){if(role)existing.role=role;return}
+   links.push({a:parent,b:child,type:'parent',...(role?{role}:{})});
+ }
+ function addUnknownParent(catId,role=''){const id=addPerson(role==='mother'?'Unknown mother':role==='father'?'Unknown father':'Unknown parent','npc','',true,role);parentLink(id,catId,role);return id}
+ function getOrMakeParent(catId,role=''){
+   if(role){const found=roleOf(catId,role);if(found)return found;
+     // Reuse a single unassigned placeholder instead of creating duplicate parents.
+     const unknown=parentEdges(catId).find(e=>!e.role&&byId(e.a)?.unknown);
+     if(unknown){unknown.role=role;return unknown.a}
+     return addUnknownParent(catId,role);
+   }
+   return parents(catId)[0]?.id||addUnknownParent(catId);
+ }
+ function setParent(childId,parentId,role){
+   if(parentId&&(!byId(parentId)||parentId===childId||isAncestor(childId,parentId)))throw Error('Invalid parent or ancestry loop.');
+   const existing=roleOf(childId,role);
+   if(existing&&existing!==parentId)links=links.filter(e=>!(e.type==='parent'&&e.a===existing&&e.b===childId&&e.role===role));
+   if(!parentId)return;
+   const other=role==='mother'?'father':'mother';
+   if(roleOf(childId,other)===parentId)throw Error('Mother and father must be different cats.');
+   // An older unlabelled edge to this parent becomes a labelled edge.
+   parentLink(parentId,childId,role);
+ }
+ function addSibling(target,id,mode){
+   if(mode==='full'){
+     const known=parentEdges(target).filter(e=>e.role==='mother'||e.role==='father');
+     if(known.length){for(const e of known)parentLink(e.a,id,e.role)}
+     else {for(const e of parentEdges(target))parentLink(e.a,id,e.role||'')}
+     if(!parents(id).length){const shared=getOrMakeParent(target);parentLink(shared,id)}
+   }else{const shared=getOrMakeParent(target,mode);parentLink(shared,id,mode)}
+ }
+ function attach(target,id,relation){switch(relation){
+   case'Mother':setParent(target,id,'mother');break;
+   case'Father':setParent(target,id,'father');break;
+   case'Grandmother':case'Grandfather':{const role=relation==='Grandmother'?'mother':'father';const mid=getOrMakeParent(target);setParent(mid,id,role);break}
+   case'Son':case'Daughter':case'Child':parentLink(target,id);break;
+   case'Sibling':addSibling(target,id,'full');break;
+   case'Half-sibling (same father)':addSibling(target,id,'father');break;
+   case'Half-sibling (same mother)':addSibling(target,id,'mother');break;
+   case'Aunt':case'Uncle':{const p=getOrMakeParent(target);const gp=getOrMakeParent(p);parentLink(gp,id);break}
+   case'Cousin':{const p=getOrMakeParent(target);const gp=getOrMakeParent(p);const aunt=addPerson('Unknown aunt/uncle','npc','',true);parentLink(gp,aunt);parentLink(aunt,id);break}
+   case'Mate':if(!links.some(e=>e.type==='mate'&&((e.a===target&&e.b===id)||(e.b===target&&e.a===id))))links.push({a:target,b:id,type:'mate'});break;
+ }}
+ function refreshParentChoices(){
+   for(const [role,selector] of [['mother','#motherChoice'],['father','#fatherChoice']]){
+     const el=$(selector);el.replaceChildren();
+     const blank=document.createElement('option');blank.value='';blank.textContent='Not specified';el.append(blank);
+     for(const p of people){if(p.id===selected||isAncestor(selected,p.id))continue;
+       const opt=document.createElement('option');opt.value=p.id;opt.textContent=p.name+(p.unknown?' (unknown)':'');el.append(opt)}
+     el.value=roleOf(selected,role)||'';
+   }
+ }
+ $('#applyParents').addEventListener('click',()=>{
+   if(!canEdit)return;
+   const mother=$('#motherChoice').value,father=$('#fatherChoice').value;
+   if(mother&&father&&mother===father)return alert('Choose different cats for mother and father.');
+   const backup=links.map(e=>({...e}));
+   try{setParent(selected,mother,'mother');setParent(selected,father,'father');sync()}
+   catch(err){links=backup;alert(err.message)}
+ });
+function layout(){
+ // Layered, family-aware layout. This only changes display positions, never saved relationships.
+ const parentLinks=links.filter(e=>e.type==='parent');
+ const levels=new Map([['j',0]]);
+ for(let pass=0;pass<people.length*3;pass++){
+   let changed=false;
+   for(const e of parentLinks){const pa=levels.get(e.a),ch=levels.get(e.b);
+     if(ch!==undefined&&pa===undefined){levels.set(e.a,ch-1);changed=true}
+     else if(pa!==undefined&&ch===undefined){levels.set(e.b,pa+1);changed=true}
+   }if(!changed)break;
+ }
+ for(const p of people)if(!levels.has(p.id)){
+   const mate=links.find(e=>e.type==='mate'&&(e.a===p.id||e.b===p.id));
+   levels.set(p.id,mate?(levels.get(mate.a===p.id?mate.b:mate.a)??0):0);
+ }
+ // Respect all parent generations where possible, even with unrelated components.
+ for(let pass=0;pass<people.length;pass++){
+   let changed=false;
+   for(const e of parentLinks){const a=levels.get(e.a),b=levels.get(e.b);
+     if(b<=a&&e.b!=='j'&&e.a!=='j'){levels.set(e.b,a+1);changed=true}
+   }if(!changed)break;
+ }
+ const groups=new Map();for(const p of people){const lv=levels.get(p.id)??0;if(!groups.has(lv))groups.set(lv,[]);groups.get(lv).push(p)}
+ const layers=[...groups.keys()].sort((a,b)=>a-b);
+ const gap=198,margin=115;
+ const order=new Map();for(const lv of layers)order.set(lv,groups.get(lv).map(p=>p.id));
+ const neighborIds=(id,direction)=>parentLinks.filter(e=>direction==='up'?e.b===id:e.a===id).map(e=>direction==='up'?e.a:e.b);
+ // Barycentric ordering keeps parents near their children and sibling groups together.
+ for(let pass=0;pass<10;pass++){
+   for(const direction of ['up','down']){
+     const scan=direction==='up'?[...layers].reverse():layers;
+     for(const lv of scan){const arr=order.get(lv);const neighbors=direction==='up'?'down':'up';
+       const score=id=>{const near=neighborIds(id,neighbors);const values=near.map(n=>{const l=levels.get(n),row=order.get(l);return row?row.indexOf(n):-1}).filter(v=>v>=0);return values.length?values.reduce((a,b)=>a+b,0)/values.length:arr.indexOf(id)};
+       const old=new Map(arr.map((id,i)=>[id,i]));arr.sort((a,b)=>score(a)-score(b)||old.get(a)-old.get(b));
+     }
+   }
+ }
+ const maxCount=Math.max(1,...[...order.values()].map(x=>x.length));
+ const width=Math.max(560,maxCount*gap+margin*2),height=Math.max(300,layers.length*150+65);
+ positions=new Map();for(const lv of layers){const arr=order.get(lv);arr.forEach((id,i)=>positions.set(id,{x:width/2+(i-(arr.length-1)/2)*gap,y:66+(lv-layers[0])*150}))}
+ // Recenter each parent toward the average of its children without overlapping nodes.
+ for(let pass=0;pass<3;pass++){
+   for(const lv of layers){const arr=order.get(lv);const desired=arr.map(id=>{
+     const kids=neighborIds(id,'down').map(k=>positions.get(k)?.x).filter(Number.isFinite);
+     return kids.length?kids.reduce((a,b)=>a+b,0)/kids.length:positions.get(id).x;
+   });
+   const adjusted=desired.map((x,i)=>Math.max(margin+i*gap,Math.min(width-margin-(arr.length-i-1)*gap,x)));
+   for(let i=1;i<adjusted.length;i++)adjusted[i]=Math.max(adjusted[i],adjusted[i-1]+gap);
+   const shift=(adjusted[0]+adjusted[adjusted.length-1])/2-width/2;
+   arr.forEach((id,i)=>positions.get(id).x=adjusted[i]-shift);
+   }
+ }
+ return {width,height};
+}
+const cat=`<path class="cat" d="M-19 -4 L-22 -26 L-8 -17 Q0 -21 8 -17 L22 -26 L19 -4 Q26 7 16 16 Q0 27 -16 16 Q-26 7 -19 -4Z"/>`;
+function draw(){const {width,height}=layout(),svg=$('#svg');svg.setAttribute('viewBox',`0 0 ${width} ${height}`);const world=$('#world');world.setAttribute('transform',`translate(${panX} ${panY}) scale(${scale})`);world.replaceChildren();
+  // Traditional pedigree branches: one family per exact parent set.
+  // Every parent gets a visible individual route to the family's junction.
+  // Children with the same two parents share a sibling rail; children from
+  // different partnerships NEVER share a rail.
+  const parentLinks=links.filter(e=>e.type==='parent');
+  const byChild=new Map();
+  for(const e of parentLinks){
+    if(!byChild.has(e.b))byChild.set(e.b,new Set());
+    byChild.get(e.b).add(e.a);
+  }
+  const families=new Map();
+  for(const [child,ids] of byChild){
+    if(!positions.has(child))continue;
+    const ps=[...ids].filter(id=>positions.has(id)).sort();
+    if(!ps.length)continue;
+    const key=ps.join('|');
+    if(!families.has(key))families.set(key,{ps,children:[]});
+    families.get(key).children.push(child);
+  }
+  const familyList=[...families.values()].sort((a,b)=>{
+    const ay=Math.min(...a.children.map(id=>positions.get(id).y));
+    const by=Math.min(...b.children.map(id=>positions.get(id).y));
+    return ay-by||a.ps.join('|').localeCompare(b.ps.join('|'));
+  });
+  const parentFamilies=new Map();
+  for(const f of familyList)for(const id of f.ps){
+    if(!parentFamilies.has(id))parentFamilies.set(id,[]);
+    parentFamilies.get(id).push(f);
+  }
+  const edge=(d,label,extra='')=>{
+    const path=document.createElementNS(NS,'path');
+    path.setAttribute('class','edge '+extra);
+    path.setAttribute('d',d);
+    const title=document.createElementNS(NS,'title');title.textContent=label;
+    path.append(title);world.append(path);
+  };
+  for(const family of familyList){
+    const kids=family.children.map(id=>({id,...positions.get(id)})).sort((a,b)=>a.x-b.x);
+    const pas=family.ps.map(id=>({id,...positions.get(id)})).sort((a,b)=>a.x-b.x);
+    const top=Math.min(...kids.map(p=>p.y-42));
+    const bottom=Math.max(...pas.map(p=>p.y+42));
+    const room=Math.max(12,top-bottom);
+    const railY=bottom+room*.69;
+    const midY=bottom+room*.28;
+    const centerX=(kids[0].x+kids[kids.length-1].x)/2;
+    const names=kids.map(p=>byId(p.id)?.name).join(', ');
+    // Each parent connects to the same central descent, without suggesting
+    // a connection between any other parents in this generation.
+    pas.forEach((p,i)=>{
+      const fs=parentFamilies.get(p.id)||[];
+      const slot=fs.indexOf(family);
+      const startX=p.x+(slot-(fs.length-1)/2)*18;
+      const laneY=midY+i*7;
+      edge(`M${startX} ${p.y+42} V${laneY} H${centerX} V${railY}`,
+        `${byId(p.id)?.name||'Parent'} → ${names}`);
+    });
+    // One sibling rail for this precise set of parents.
+    if(kids.length>1)edge(`M${kids[0].x} ${railY} H${kids[kids.length-1].x}`,
+      `Siblings: ${names}`);
+    for(const kid of kids)edge(`M${kid.x} ${railY} V${kid.y-42}`,
+      `${family.ps.map(id=>byId(id)?.name||'Parent').join(' + ')} → ${byId(kid.id)?.name||'Child'}`);
+  }
+ // Mate links are shown only when the cats share a row, and are dashed.
+ for(const e of links.filter(e=>e.type==='mate')){
+   const a=positions.get(e.a),b=positions.get(e.b);if(!a||!b||Math.abs(a.y-b.y)>1)continue;
+   const left=a.x<b.x?a:b,right=a.x<b.x?b:a;
+   if(right.x-left.x<175)continue;
+   const path=document.createElementNS(NS,'path');path.setAttribute('class','edge other');
+   path.setAttribute('d',`M${left.x+85} ${left.y} H${right.x-85}`);world.append(path);
+ }
+ for(const p of people){const pos=positions.get(p.id),g=document.createElementNS(NS,'g');g.setAttribute('class',`node${selected===p.id?' selected':''}${p.unknown?' unknown':''}`);g.setAttribute('transform',`translate(${pos.x} ${pos.y})`);g.dataset.id=p.id;const rect=document.createElementNS(NS,'rect');for(const [k,v] of Object.entries({x:-85,y:-42,width:170,height:84,rx:11}))rect.setAttribute(k,v);g.append(rect);const symbol=document.createElementNS(NS,'g');symbol.setAttribute('transform','translate(0 -13)');symbol.innerHTML=cat;g.append(symbol);for(const [value,y,cls] of [[p.name,25,''],[p.unknown?'Unspecified':p.kind==='npc'?'NPC':'Character',38,'sub']]){const t=document.createElementNS(NS,'text');t.setAttribute('y',y);if(cls)t.setAttribute('class',cls);t.textContent=value.length>20?value.slice(0,19)+'…':value;g.append(t)}g.addEventListener('click',()=>{if(drag?.moved)return;selected=p.id;sync()});world.append(g)} }
+function updateSiblingChoices(){}
+function sync(){const t=$('#target');t.replaceChildren();for(const p of people){const o=document.createElement('option');o.value=p.id;o.textContent=p.name;t.append(o)}t.value=selected;refreshParentChoices();const p=byId(selected);$('#selection').textContent='Selected: '+(p?.name||'None');$('#remove').disabled=!canEdit||selected==='j';$('#profile').classList.toggle('hidden',!(p?.kind==='registered'&&/^\d+$/.test(p.profileId||'')));draw()}
+$('#target').addEventListener('change',e=>{selected=e.target.value;sync()});$('#relation').addEventListener('change',updateSiblingChoices);$('#kind').addEventListener('change',()=>$('#profileWrap').classList.toggle('hidden',$('#kind').value!=='registered'));
+$('#add').addEventListener('click',()=>{if(!canEdit)return;const name=$('#name').value.trim(),kind=$('#kind').value,profileId=$('#profileId').value.trim(),relation=$('#relation').value,target=$('#target').value;if(!name)return alert('Please enter a name.');if(kind==='registered'&&!/^\d+$/.test(profileId))return alert('Enter the numeric Jcink profile ID.');const oldPeople=people.map(p=>({...p})),oldLinks=links.map(e=>({...e}));const id=addPerson(name,kind,profileId);try{attach(target,id,relation)}catch(err){people=oldPeople;links=oldLinks;return alert(err.message)}selected=id;$('#name').value='';$('#profileId').value='';sync()});
+$('#remove').addEventListener('click',()=>{if(!canEdit)return;if(selected==='j')return;const p=byId(selected);if(!confirm(`Remove ${p.name} from this tree?`))return;people=people.filter(x=>x.id!==selected);links=links.filter(x=>x.a!==selected&&x.b!==selected);selected='j';sync()});$('#profile').addEventListener('click',()=>{const p=byId(selected);if(p&&/^\d+$/.test(p.profileId||''))window.open(`https://vwwnewleaf.jcink.net/index.php?showuser=${p.profileId}`,'_blank','noopener')});
+$('#zin').onclick=()=>{scale=Math.min(2.5,scale*1.2);draw()};$('#zout').onclick=()=>{scale=Math.max(.35,scale/1.2);draw()};$('#center').onclick=()=>{scale=1;panX=panY=0;draw()};
+$('#export').onclick=()=>{const blob=new Blob([JSON.stringify({version:2,people,links},null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='newleaf-family-tree.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
+$('#importBtn').onclick=()=>{if(canEdit)$('#importFile').click()};$('#importFile').onchange=async e=>{if(!canEdit)return;const f=e.target.files?.[0];if(!f)return;try{const data=JSON.parse(await f.text());if(!Array.isArray(data.people)||!Array.isArray(data.links)||!data.people.some(p=>p.id==='j')||data.people.length>500)throw Error('Invalid tree file');const ids=new Set(data.people.map(p=>p.id));if(ids.size!==data.people.length||data.links.some(l=>!ids.has(l.a)||!ids.has(l.b)||!['parent','mate'].includes(l.type)))throw Error('Invalid connections');people=data.people.map(p=>({id:String(p.id),name:String(p.name).slice(0,60),kind:p.kind==='registered'?'registered':'npc',profileId:String(p.profileId||''),unknown:!!p.unknown,sex:['mother','father'].includes(p.sex)?p.sex:''}));links=data.links.map(l=>({a:String(l.a),b:String(l.b),type:l.type,...(["mother","father"].includes(l.role)?{role:l.role}:{})}));next=Math.max(people.length+100,...people.map(p=>/^p\d+$/.test(p.id)?Number(p.id.slice(1)):0));selected='j';migrateParentRoles();sync()}catch(err){alert('Could not import: '+err.message)}e.target.value=''};
+const viewport=$('#viewport');viewport.addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY,px:panX,py:panY,moved:false};viewport.setPointerCapture(e.pointerId)});viewport.addEventListener('pointermove',e=>{if(!drag)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.abs(dx)+Math.abs(dy)>5)drag.moved=true;if(!drag.moved)return;const {width,height}=layout(),rect=viewport.getBoundingClientRect();panX=drag.px+dx*width/rect.width;panY=drag.py+dy*height/rect.height;draw()});viewport.addEventListener('pointerup',()=>{setTimeout(()=>drag=null,0)});viewport.addEventListener('pointercancel',()=>drag=null);viewport.addEventListener('wheel',e=>{e.preventDefault();scale=Math.max(.35,Math.min(2.5,scale*(e.deltaY<0?1.08:.92)));draw()},{passive:false});
+// Firebase: one public tree document per numeric Jcink character ID.
+const adminUid='dQmyuXv8i7brRE9UEO0f1wAJKgT2';
+const config={apiKey:'AIzaSyBrcun5edcfj7Bn64mDEqU05GeAufpDslA',authDomain:'newleaf-family-tree.firebaseapp.com',projectId:'newleaf-family-tree',storageBucket:'newleaf-family-tree.firebasestorage.app',messagingSenderId:'212262099547',appId:'1:212262099547:web:20eb01438c17114752fd7e'};
+const status=$('#firebaseStatus');
+function editing(enabled){canEdit=enabled;document.body.classList.toggle('signed-in',enabled);$('#add').disabled=!enabled;$('#remove').disabled=!enabled||selected==='j';$('#importBtn').disabled=!enabled;if(!enabled){document.body.classList.remove('editor-open');editToggle.textContent='Edit relatives';editToggle.setAttribute('aria-expanded','false')}}
+function setTree(data){if(!data||!Array.isArray(data.people)||!Array.isArray(data.links))return;const ids=new Set(data.people.map(p=>String(p.id)));if(!ids.has('j')||ids.size!==data.people.length||data.people.length>500||data.links.some(l=>!ids.has(String(l.a))||!ids.has(String(l.b))||!['parent','mate'].includes(l.type)))throw Error('Saved tree has invalid data');people=data.people.map(p=>({id:String(p.id),name:String(p.name).slice(0,60),kind:p.kind==='registered'?'registered':'npc',profileId:String(p.profileId||''),unknown:!!p.unknown,sex:['mother','father'].includes(p.sex)?p.sex:''}));links=data.links.map(l=>({a:String(l.a),b:String(l.b),type:l.type,...(["mother","father"].includes(l.role)?{role:l.role}:{})}));next=Math.max(people.length+100,...people.map(p=>/^p\d+$/.test(p.id)?Number(p.id.slice(1)):0));selected='j';scale=1;panX=panY=0;migrateParentRoles();sync()}
+async function startFirebase(){
+  if(!/^\d+$/.test(characterId||'')){status.textContent='Missing valid character ID';editing(false);return}
+  try{
+    const [{initializeApp},{getAuth,onAuthStateChanged,signInWithEmailAndPassword,signOut},{getFirestore,doc,getDoc,setDoc}]=await Promise.all([
+      import('https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js'),
+      import('https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js'),
+      import('https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js')]);
+    const app=initializeApp(config),auth=getAuth(app),db=getFirestore(app),ref=doc(db,'familyTrees',characterId);
+    $('#fbLogin').onclick=async()=>{try{await signInWithEmailAndPassword(auth,$('#fbEmail').value.trim(),$('#fbPassword').value);$('#fbPassword').value=''}catch(e){status.textContent='Sign-in failed: '+e.code}};
+    $('#fbLogout').onclick=()=>signOut(auth);
+    $('#saveTree').onclick=async()=>{if(!canEdit)return;status.textContent='Saving…';try{await setDoc(ref,{people,links,updatedAt:new Date().toISOString()});status.textContent='Saved! Refresh to verify.'}catch(e){status.textContent='Save failed: '+e.code}};
+    onAuthStateChanged(auth,user=>{editing(!!user&&user.uid===adminUid);status.textContent=user?(canEdit?'Admin editor signed in':'Signed in (view only)'):'Public view — admin sign-in available';});
+    const snapshot=await getDoc(ref);
+    if(snapshot.exists()){setTree(snapshot.data());status.textContent='Published tree loaded'}
+    else if(characterId!=='2'){people=[{id:'j',name:'Character '+characterId,kind:'registered',profileId:characterId}];links=[];sync();status.textContent='No saved tree yet — admin can create one'}
+    else{sync();status.textContent='Jaggedstar demo — not saved yet'}
+  }catch(e){status.textContent='Firebase unavailable: '+(e.code||e.message);editing(false)}
+}
+migrateParentRoles();editing(false);sync();startFirebase();
+})();
+</script></body></html>
